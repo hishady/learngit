@@ -1,0 +1,411 @@
+// Studentsystem.cpp : 定义控制台应用程序的入口点。
+//
+#include "stdafx.h"
+#include<stdlib.h>//清屏头文件
+#include <stdio.h>
+#include <string.h>
+#define N 30 //限定学生人数
+void list(void);//菜单
+int ReadStudent(int score[],int num[],int n);//读取录入学号及成绩，返回学生个数
+//void PrintScore(int score[],int n);//打印排序（测试用）
+void CalCountandAverage(int score[],int n,int *count,float *average);//求总分、平均值
+void AutoSort(int score[],int num[],int n,int (*aord)(int a,int b));//排序，利用函数指针可以选择升序or降序
+int AscendingSort(int a,int b);//升序
+int DescendingSort(int a,int b);//降序
+void Swap(int *x,int *y);//交换两个值
+void NumascendingSort(int score[],int num[],int n,int (*aord)(int a,int b));//按学号升序排序
+int SearchNum(int score[],int num[],int n);//根据学号查成绩
+void Proportion(int score[],int num[],int n);//计算优秀、良好、中等、及格、不及格比例
+int CalcLevel(int Targetscore,int score[],int num[],int n);//计算排名
+void PrintScorelist(int score[],int num[],int n);//打印成绩表
+void NewSandN(int *score,int *num,int n,int *newscore,int *newnum);//New 一个score[] and num[] 重新初始化（防止改变原来的数组）
+int _tmain(int argc, _TCHAR* argv[])
+{	
+	int score[N],num[N],renshu=0;
+	int newscore[N],newnum[N];
+	int order,choice;
+	int count;
+	float average;
+	list();
+	do{
+		scanf("%d",&choice);//第一次录入时，三种情况													  										  
+		if(choice==1)// 一、选择1，进行录入
+		{
+			renshu=ReadStudent(score,num,renshu);
+			printf("\nSucceed: Now the number of student= %d \n\n",renshu);
+		/*	printf("num:");
+			PrintScore(num,renshu);  //测试打印是否有误
+			printf("score:");
+			PrintScore(score,renshu);
+		*/
+			list();
+		}
+		else if(choice==0) //二、选择0，退出程序
+		{
+			printf("Have a good day ! goodbye! \n");
+			return 0;
+		}
+		else if(choice>8||choice<0) 
+			{
+				system("cls");
+				list();
+				printf("\n\nError:Can't find the thrill.\n");
+				printf("please input again: ");
+			}
+		else //三、提示错误
+			{
+				system("cls");
+				list();
+				printf("\n\nError:Northing of the number and score.\n");
+				printf("please input again: ");
+			}
+	}while(choice!=1);//当选择1后，学号成绩录入完成后，退出循环，列出菜单供用户选择功能。
+	do{
+		scanf("%d",&order);//第二次循环，选择所需要的功能
+		if(order==1){
+			renshu=ReadStudent(score,num,renshu);
+			printf("Succeed: Now the number of student= %d \n\n",renshu);
+			list();
+		}
+		else if(order==2){
+			CalCountandAverage(score,renshu,&count,&average);
+			printf("\n总分：%d分 平均分：%0.2f分\n\n",count,average);
+			list();
+		}
+		else if(order==3){
+			NewSandN(score,num,renshu,newscore,newnum);
+			AutoSort(newscore,newnum,renshu,AscendingSort);
+			PrintScorelist(newscore,newnum,renshu);
+			printf("\n");
+			list();
+		}
+		else if(order==4)
+		{
+			NewSandN(score,num,renshu,newscore,newnum);
+			AutoSort(newscore,newnum,renshu,DescendingSort);
+			PrintScorelist(newscore,newnum,renshu);
+			printf("\n");
+			list();
+		}
+		else if(order==5)
+		{	
+			NewSandN(score,num,renshu,newscore,newnum);
+			NumascendingSort(newscore,newnum,renshu,AscendingSort);
+			printf("Sort in ascending order by number:\n");
+			PrintScorelist(newscore,newnum,renshu);
+			printf("\n");
+			list();
+		}
+		else if(order==6)
+		{	
+			NewSandN(score,num,renshu,newscore,newnum);
+			SearchNum(newscore,newnum,renshu);
+			list();
+		}
+		else if(order==7)
+		{	
+			NewSandN(score,num,renshu,newscore,newnum);
+			Proportion(newscore,newnum,renshu);//计算比例
+			list();
+		}
+		else if(order==8)
+		{	
+			PrintScorelist(score,num,renshu);
+		}
+		else if(order==0)
+		{	
+			system("cls");
+			printf("Have a good day ! goodbye! \n");
+			return 0;
+		}
+		else
+		{
+			printf("\nPlease input 0~8 to get the thrill!\n");
+			printf("Input again: ");
+		}
+	}while(1);
+	return 0;
+}
+void list(void)//菜单
+{
+	printf("1.Input record\n");
+	printf("2.Calculate total and average score of coures\n");
+	printf("3.Sort in ascending order by score\n");
+	printf("4.Sort in descending order by score\n");
+	printf("5.Sort in ascending order by number\n");
+	printf("6.Search by number\n");
+	printf("7.Statistic analtsis\n");
+	printf("8.List record\n");
+	printf("0.Exit\n");
+	printf("\n");
+	printf("Please enter your choice:");
+}
+int ReadStudent(int score[],int num[],int n)//读取录入学号及成绩，返回学生个数
+{
+	int i=n-1;
+	int j;
+	printf("Please enter num and score:\n");
+	printf("num score\n");
+	do
+	{
+		i++;
+		scanf("%d%d",&num[i],&score[i]);
+		for(j=0;j<i;j++)
+		if(num[i]==num[j])//判断新的学号与之前录入过的学号是否相同，同则错误，提示重新输入。
+		{
+			printf("Sorry this number %d is exists please input again: \n",num[i]);
+			i--;
+			break;
+		}
+		if(num[i]==0)
+			break;
+	}while(num[i]!=0||i!=30);//当学号为0 或 人数超过30个时候，退出录入。
+	return i;	
+}
+void PrintScore(int score[],int n)//打印排序（测试用）
+{
+	int i;
+	for(i=0;i<n;i++)
+	{
+		printf("%d  ",score[i]);	
+	}
+	printf("\n");
+}
+void CalCountandAverage(int score[],int n,int *count,float *average)//求总分、平均值
+{
+	float n1=n;
+	*count=score[0];
+	int i;
+	for(i=1;i<n;i++)
+	{
+		*count=*count+score[i];
+	}
+	*average=(float)*count/n1;
+}
+void AutoSort(int score[],int num[],int n,int (*aord)(int a,int b))//自选升降序
+{
+	int i,j;
+	for(i=0;i<n-1;i++)//外层：先取一个出来。score[0（i）]
+	{
+		for(j=i+1;j<n;j++)//内层：将score[0（i）]与后面的比较
+		{
+			if((*aord)(score[i],score[j]))
+			{
+				Swap(&score[i],&score[j]);
+				Swap(&num[i],&num[j]);
+			}
+		}
+	}
+}
+int AscendingSort(int a,int b)//升序排序
+{
+	return a>b;
+}
+int DescendingSort(int a,int b)//降序排序
+{
+	return a<b;
+}
+void Swap(int *x,int *y)//交换位置函数
+{
+	int temp;
+	temp=*x;
+	*x=*y;
+	*y=temp;
+}
+void NumascendingSort(int score[],int num[],int n,int (*aord)(int a,int b))//根据学号升序排序
+{
+	int i,j;
+	for(i=0;i<n-1;i++)
+	{
+		for(j=i+1;j<n;j++)
+		{
+			if((*aord)(num[i],num[j]))
+			{
+				Swap(&num[i],&num[j]);
+				Swap(&score[i],&score[j]);	
+			}
+		}
+	}
+}
+int SearchNum(int score[],int num[],int n)//学号查找成绩
+{
+	/*int flag,i,j;
+	int level=0;
+	printf("Please input number you need to search:  ");
+	loop:scanf("%d",&flag);
+	for(i=0;i<n;i++)//从第一个开始找，跟录入的比。相同则找到。
+	{
+		if(flag==num[i])
+		{
+			level=CalcLevel(score[i],score,num,n);//计算排名
+			printf("学号：%d 成绩：%d 排名：第%d名\n",num[i],score[i],level);
+			printf("\n");
+			return 0;
+		}
+	}
+	printf("Sorry can't find the number you input please input again: ");	
+	printf("\n");
+	goto loop;*/
+	NumascendingSort(score,num,n,AscendingSort);//第一步将需要找的先排序（升序）
+	loop:int low=0,high=n-1,mid;
+	int flag,j,level=0;
+	printf("Please input number you need to search:  ");
+	scanf("%d",&flag);
+	while(low<=high)
+	{
+		mid=(low+high)/2;//把中间位置算出来
+		if(num[mid]==flag)//假如录入跟中间的一样，则算排名并返回。
+		{
+			for(j=0;j<n;j++)
+			{
+				if(score[j]>score[mid])
+				{
+					level++;
+				}
+			}
+			printf("学号：%d 成绩：%d 排名：第%d名\n",num[mid],score[mid],level+1);
+			return 0;
+		}
+		else if(flag>num[mid])//假如录入的比中间的要大，则查找区间在中间数的右边。
+		{
+			low=mid+1;//把最小值，变成中间数后一位。1 2 3 4 5  ex：low=1 high=5 搜索的是4 大于中间数3 则区间在3的右边，low移动到4 在[4,5]
+		}
+		else if(flag<num[mid])//假如录入的比中间的要小，则查找区间在中间数的左边。
+		{
+			high=mid-1;//把最大值，变成中间数前一位。1 2 3 4 5  ex：low=1 high=5 搜索的是2 小于中间数3 则区间在3的左边，high移动到2 在[1,2]
+		} 
+	}
+	printf("Sorry can't find the number you input please input again: ");	
+	printf("\n");
+	goto loop;
+}
+void Proportion(int score[],int num[],int n)//计算比例
+{
+	float n1=n;
+	AutoSort(score,num,n,DescendingSort);//先进行降序排列，有助于快点计算
+	int i;
+	int level[5]={0,0,0,0,0};
+	float proportion[5];
+	/*****************利用指针偏移定位******************/
+	int *p=level;
+	for(i=0;i<n;i++)
+	{
+		if(score[i]>=90&&score[i]<=100)
+			*p=*p+1;	//p=level[0]	*p=0;	
+		if(score[i]>=80&&score[i]<90)
+			{	
+				p=level;//p=level[0]		
+				p=p+1;
+				*p=*p+1;//p=level[1]		
+			}
+		if(score[i]>=70&&score[i]<80)
+			{					
+				p=level;//p=level[0]		
+				p=p+2;
+				*p=*p+1;//p=level[2]		
+			}
+		if(score[i]>=60&&score[i]<70)
+			{					
+				p=level;//p=level[0]
+				p=p+3;
+				*p=*p+1;//p=level[3]
+			}
+		if(score[i]<60)
+			{					
+				p=level;//p=level[0]
+				p=p+4;
+				*p=*p+1;//p=level[4]
+			}	
+	}
+		for(i=0;i<5;i++)
+		proportion[i]=(float)level[i]/n1*100;
+		printf("\n优秀:%4.2f%% 良好:%4.2f%% 中等:%4.2f%% 及格:%0.2f%% 不及格:%0.2f%%\n\n",proportion[0],proportion[1],proportion[2],proportion[3],proportion[4]);
+	/********************数组下标偏移计算排名*******************************/
+	/*for(i=0;i<n;i++)
+	{
+		if(score[i]>=90&&score[i]<=100)
+		{
+			level[0]=level[0]+1;
+		}
+	}
+	for(i=level[0];i<n;i++)
+	{
+		if(score[i]>=80&&score[i]<90)
+		{
+			level[1]=level[1]+1;
+		}
+	}
+	for(i=level[1];i<n;i++)
+	{
+		if(score[i]>=70&&score[i]<80)
+		{
+			level[2]=level[2]+1;
+		}
+	}
+	for(i=level[2];i<n;i++)
+	{
+		if(score[i]>=60&&score[i]<70)
+		{
+			level[3]=level[3]+1;
+		}
+	}
+	for(i=level[3];i<n;i++)
+	{
+		if(score[i]<60)
+		{
+			level[4]=level[4]+1;
+		}
+	}
+	for(i=0;i<5;i++)
+	{
+		proportion[i]=(float)level[i]/n1*100;
+	}*/
+	//printf("优秀:%4.2f%% 良好:%4.2f%% 中等:%4.2f%% 及格:%0.2f%% 不及格:%0.2f%%\n",proportion[0],proportion[1],proportion[2],proportion[3],proportion[4]);
+}
+void PrintScorelist(int score[],int num[],int n)//打印成绩表
+{
+	int i,level=0;
+	printf("*   学号  *   成 绩   *   排名  *\n");
+	for(i=0;i<n;i++)
+	{
+		level=CalcLevel(score[i],score,num,n);//计算排名
+		printf("*   %d   *    %d分   *   第%d名 *\n",num[i],score[i],level);
+	}
+
+}
+int CalcLevel(int Targetscore,int score[],int num[],int n)//计算排名
+{
+	/*********方法一，找到目标的下标，排名等于下标加1*******/
+	int j,i;
+	int level2=1;
+	int a[N];//复制一个新的score[]给它算排名，防止弄乱本要显示的newscore
+	int b[N];//复制一个新的num[]给它算排名，防止弄乱本要显示的newnum
+	memcpy(a,score,n*sizeof(int));
+	memcpy(b,num,n*sizeof(int));
+	AutoSort(a,b,n,DescendingSort);//先由大到小排序
+	for(i=0;i<n;i++)
+	{
+		if(Targetscore==a[i])
+		{
+			level2=level2+i;
+			return level2;
+		}
+	}
+	/************方法2：历遍整个数组每当找到大于目标的，然后加1，排名=大于目标的个数+1；*******
+	int level1=0;
+	for(j=0;j<n;j++)
+		{
+			if(score[j]>Targetscore)
+			{
+				level1++;	
+			}	
+		}
+	return level1+1;
+	*/
+	return 0;
+}
+void NewSandN(int *score,int *num,int n,int *newscore,int *newnum)//New 一个score[] and num[] 重新初始化
+{
+		memcpy(newscore,score,n*sizeof(int));//库函数，用法memcpy(目标的指针，被复制的指针（+i）（如果想从某个位置开始，则偏移再复制），需要复制的长度)
+		memcpy(newnum,num,n*sizeof(int));//具体忘了百度
+}
